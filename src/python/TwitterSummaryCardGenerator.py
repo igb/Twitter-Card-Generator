@@ -21,6 +21,8 @@ def extractLinksFromRssFeed(feedUrl):
 	return extractedLinks
 		
 def getDocument(documentUrl):
+	docName=documentUrl.rsplit('/')[1]
+	prints docName
 	req = Request(documentUrl)
 	res = urllib2.urlopen(req)
 	document=res.read()
