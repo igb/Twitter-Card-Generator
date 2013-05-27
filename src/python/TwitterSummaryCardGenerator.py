@@ -13,7 +13,7 @@ class TwitterSummaryCardGenerator():
 	    return cgi.escape(summary, True)
 
 	def extractLinksAndTitlesFromRssFeed(self, feedUrl):
-		"""Extract URLs of resources from the RSS feed"""
+		"""Extract URLs and Titles of resources from the RSS feed"""
 		extractedLinks=[]
 		req = Request(feedUrl)
 		res = urllib2.urlopen(req)
@@ -31,46 +31,61 @@ class TwitterSummaryCardGenerator():
 				titles = item.getElementsByTagName("title")
 				for title in titles:
 					titleVal = title.childNodes
-					titleData=linkVal[0].data
-				extractedLinks.append((titleData, linkData))
+					titleData=titleVal[0].data
+				extractedLinks.append((linkData, titleData))
 		return extractedLinks
 
 
 	def generateSummaryCardFromDocument(self, document, title):
-		summary = ""
+		
+
+		summary = "\n\n<!-- start of Twitter Summary Card -->\n"
 		summary += '<meta name="twitter:card" content="summary">\n'
 		summary += '<meta name="twitter:title" content="' + title + '">\n'
-		summary += '<meta name="twitter:description" content="' + self.summarize(document) + '">\n'
+		summary += '<meta name="twitter:description" content="' + self.summarize(document,title) + '">\n'
+		summary += '<meta name="twitter:site" content="@' + self.twitterHandle + '">\n'
 		summary += '<meta name="twitter:creator" content="@' + self.twitterHandle + '">\n'
+		summary += "<!-- end of Twitter Summary Card -->\n\n"
 		return summary
 
 		
 	def getDocument(self, documentUrl):
 		docName=documentUrl.rsplit('/', 1)[1]
-		print docName
 		req = Request(documentUrl)
 		res = urllib2.urlopen(req)
 		document=res.read()
+		document=unicode(document, errors='replace') 
 		return (document, docName)
 
-	def summarize(self, document):
-		contentStart=0;
-		firstParagraphIndex=document.find("<p>")
-		if firstParagraphIndex == -1:
-			bodyIndex=document.find("<body>")
-			contentStart=bodyIndex + 6
-		else:
-			contentStart=firstParagraphIndex + 3
+	def summarize(self, document, title):
+
+		bodyIndex=document.find("<body>")
+		closeBodyIndex=document.find("</body>")
+
 		s = MLStripper()
-		s.feed(document)
-		print s.get_data()
+		s.feed(document[bodyIndex:(closeBodyIndex + 7)])
+	        snippet=s.get_data()
+		snippet=snippet.strip()
+		
+		#if the title is repeated at the start of the document (as a H1, etc,) strip it out...
+		if (snippet.find(title)==0):
+			snippet=snippet[len(title):].strip()
+		
+		#if the snippet is naturally less then 200, leace it alone, otherwise make the last three characters '...'
+		if (len(snippet) <= 200):
+			return self.sanitize(snippet)
+		else:
+			snippet=snippet[:197] + "..."
+			return self.sanitize(snippet)
+
+
 	
-		snippet=(document[contentStart:])[:200]
-		return self.sanitize(snippet)
+		
+		
 	
 	def insertSummaryCard(self, document, summaryCard):
 		insertionPoint = document.index("<head>") + 6
-		print summaryCard
+		return document[:insertionPoint] + summaryCard + document[insertionPoint:]
 
 
 	def generateFromRssFeed(self, feedUrl):
@@ -90,12 +105,19 @@ class TwitterSummaryCardGenerator():
 def main():
 	
 	twitterHandle=sys.argv[1]
-	print twitterHandle 
+
 	feedUrl=sys.argv[2]
-	print feedUrl
+
+	outputDir=sys.argv[3]
+
 	cardGenerator =  TwitterSummaryCardGenerator(twitterHandle)
 	
-	cardGenerator.generateFromRssFeed(feedUrl)
+	docs=cardGenerator.generateFromRssFeed(feedUrl)
+	for doc in docs:
+		
+		text_file = open(outputDir + "/"  + doc[1], "w")
+		text_file.write(doc[0].encode('utf8'))
+		text_file.close()
 
 if  __name__ =='__main__':main()	
 
