@@ -106,7 +106,11 @@ class TwitterSummaryCardGenerator():
 				print documentName + " already had card...skipping."
 		return documentsWithCards
 
-
+	def extractTitleFromDocument(self, document):
+		"""Extract title from HTML"""
+		start=document.find("<title>") + 7
+		end=document.find("</title>")
+                return document[start:end]  
 
 	def generateFromLocalFile(self, file):
 		"""Generate HTML documents containing Twitter Summary Cards from a local file"""
@@ -119,7 +123,7 @@ class TwitterSummaryCardGenerator():
 	
 	
 		if not self.testForCardPresence(document):
-			summaryCard=self.generateSummaryCardFromDocument(document, "TitleTK")
+			summaryCard=self.generateSummaryCardFromDocument(document, self.extractTitleFromDocument(document))
 			documentWithCard=self.insertSummaryCard(document, summaryCard)
 			return (documentWithCard,docName)
 		else:
