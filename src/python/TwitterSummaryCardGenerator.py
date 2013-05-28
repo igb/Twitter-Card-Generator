@@ -1,4 +1,4 @@
-import sys, urllib2, cgi
+import sys, urllib2, cgi, argparse
 from MLStripper import MLStripper
 from urllib2 import Request
 from xml.dom.minidom import parse, parseString
@@ -57,6 +57,9 @@ class TwitterSummaryCardGenerator():
 		document=unicode(document, errors='replace') 
 		return (document, docName)
 
+	def testForCardPresence(self, document):
+		return (document.find("<meta name=\"twitter:card\"") > -1)
+
 	def summarize(self, document, title):
 
 		bodyIndex=document.find("<body>")
@@ -95,24 +98,72 @@ class TwitterSummaryCardGenerator():
 		for documentLinkAndTitle in documentLinksAndTitles:
 			(documentUrl, title)=documentLinkAndTitle
 			(document, documentName)=self.getDocument(documentUrl)
-			summaryCard=self.generateSummaryCardFromDocument(document, title)
-			documentWithCard=self.insertSummaryCard(document, summaryCard)
-			documentsWithCards.append((documentWithCard, documentName))
+			if not self.testForCardPresence(document):
+				summaryCard=self.generateSummaryCardFromDocument(document, title)
+				documentWithCard=self.insertSummaryCard(document, summaryCard)
+				documentsWithCards.append((documentWithCard, documentName))
+			else:
+				print documentName + " already had card...skipping."
 		return documentsWithCards
+
+
+
+	def generateFromLocalFile(self, file):
+		"""Generate HTML documents containing Twitter Summary Cards from a local file"""
+
+
+		docName=file.rsplit('/', 1)[1]
+
+		with open (file, "r") as myfile:
+			document=myfile.read().replace('\n', '')
+	
+	
+		if not self.testForCardPresence(document):
+			summaryCard=self.generateSummaryCardFromDocument(document, "TitleTK")
+			documentWithCard=self.insertSummaryCard(document, summaryCard)
+			return (documentWithCard,docName)
+		else:
+			print docName + " already had card...skipping."
+			return "Error"
+		
 	
 
 
 def main():
+
+
+	argparser = argparse.ArgumentParser()
+
+
+	argparser.add_argument("-t", "--twitterid", help="your Twitter user name, without the '@'")
+	group = argparser.add_mutually_exclusive_group(required=True)
+	group.add_argument("-f", "--file", help="local file to summarize and add card data to")
+	group.add_argument("-r", "--rssfeed", help="url of RSS feed to download and summarize")
+	argparser.add_argument("-d", "--outputdir", help="output directory for to write file(s) with summary")
+
+	args = argparser.parse_args()
 	
-	twitterHandle=sys.argv[1]
-
-	feedUrl=sys.argv[2]
-
-	outputDir=sys.argv[3]
-
+	docs=[]
+	twitterHandle=args.twitterid
 	cardGenerator =  TwitterSummaryCardGenerator(twitterHandle)
+
+	if args.file:
+	   file=args.file
+	   doc=cardGenerator.generateFromLocalFile(file)
+	   if not doc == "Error":
+		   docs.append(doc)
+	else:
+	  feedUrl=args.rssfeed
+	  docs=cardGenerator.generateFromRssFeed(feedUrl)
+
+	if args.outputdir:
+		outputDir=args.outputdir
+	else:
+		outputDir="./"
+
+
 	
-	docs=cardGenerator.generateFromRssFeed(feedUrl)
+
 	for doc in docs:
 		
 		text_file = open(outputDir + "/"  + doc[1], "w")
