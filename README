@@ -1,0 +1,5 @@
+cd src/python
+
+python  TwitterSummaryCardGenerator.py <twitter-handle> <rss-feed>  <output-directory>
+
+e.g.: python TwitterSummaryCardGenerator.py "igb" "http://www.hccp.org/rss.xml"  /tmp/sitepub/
