@@ -1,5 +1,14 @@
-cd src/python
+usage: TwitterSummaryCardGenerator.py [-h] [-t TWITTERID]
+                                      (-f FILE | -r RSSFEED) [-d OUTPUTDIR]
 
-python  TwitterSummaryCardGenerator.py <twitter-handle> <rss-feed>  <output-directory>
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TWITTERID, --twitterid TWITTERID
+                        your Twitter user name, without the '@'
+  -f FILE, --file FILE  local file to summarize and add card data to
+  -r RSSFEED, --rssfeed RSSFEED
+                        url of RSS feed to download and summarize
+  -d OUTPUTDIR, --outputdir OUTPUTDIR
+                        output directory for to write file(s) with summary
 
-e.g.: python TwitterSummaryCardGenerator.py "igb" "http://www.hccp.org/rss.xml"  /tmp/sitepub/
+
