@@ -115,7 +115,7 @@ class TwitterSummaryCardGenerator():
 		docName=file.rsplit('/', 1)[1]
 
 		with open (file, "r") as myfile:
-			document=myfile.read().replace('\n', '')
+			document=myfile.read()
 	
 	
 		if not self.testForCardPresence(document):
